@@ -5,7 +5,7 @@ function App() {
   const [output, setOutput] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const simplyfyText = async () => {
+  const simplifyText = async () => {
     if(!input.trim())
       return;
 
@@ -26,7 +26,7 @@ function App() {
           messages: [
 {
               role: "user",
-              content: `You're a financial literacy educator for Gen Z. Take this concept and explain it in simple, relatable terms. Use casual language, modern examples (apps, streaming services, social media), and break down any jargon. Keep it concise (2-3 sentences) and engaging.'
+              content: `You're a financial literacy educator for Gen Z. Take this concept and explain it in simple, relatable terms. Use casual language, modern examples (apps, streaming services, social media), and break down any jargon. Keep it concise (2-3 sentences) and engaging.
               Financial concept: ${input}
 
               Simplified output:`
@@ -62,7 +62,7 @@ function App() {
     window.speechSynthesis.speak(utterance);
   };
 
-  const finTerms = ["APR", "Compound Interest", "Diversification", "Liquidity", "Asset Allocation"];
+  const financialTerms = ["APR", "Compound Interest", "Diversification", "Liquidity", "Asset Allocation"];
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
@@ -115,7 +115,7 @@ function App() {
           <div className="mb-6">
             <p className="text-purple-200 text-xs mb-2">Or try these:</p>
             <div className="flex flex-wrap gap-2">
-              {exampleTerms.map((term, i) => (
+              {financialTerms.map((term, i) => (
                 <button
                   key={i}
                   onClick={() => setInput(term)}
@@ -167,7 +167,7 @@ function App() {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-purple-300 text-sm">
-            Powered by Claude AI ✨ | Built for Gen Z 💸
+            Powered by Gemini | Built for Gen Z | Made by Tanushree and Amelia
           </p>
         </div>
       </div>

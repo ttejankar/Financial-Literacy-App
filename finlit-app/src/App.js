@@ -1,7 +1,17 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from 'react';
 
 function App() {
+  const [input, setInput] = useState('');
+  const [output, setOutput] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const simplyfyText = async () => {
+    if(!input.trim())
+      return;
+
+    setLoading(true);
+    setOutput('');
+  }
   return (
     <div className="App">
       <header className="App-header">

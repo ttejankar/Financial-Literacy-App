@@ -106,7 +106,7 @@ Just give me the ultra-casual version, nothing else:`
     if (!output) return;
 
     if( videoRef.current && !isSpeaking && !isPaused){
-      videoRef.current.play();
+      videoRef.current.play().catch(err => console.log("Video play error:", err));
     }
 
     if (isPaused){
@@ -135,6 +135,9 @@ Just give me the ultra-casual version, nothing else:`
     utterance.onend = () => {             
       setIsSpeaking(false);
       setIsPaused(false);
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
     };
     utterance.onerror = () => {          
       setIsSpeaking(false);
@@ -162,13 +165,14 @@ Just give me the ultra-casual version, nothing else:`
       
       {/* video background */}
       {output && (
-        <div className="fixed inset-0 z-0">
+        <div className={`fixed inset-0 z-0 transition-opacity duration-500 ${output ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
           <video
             ref={videoRef}
-            className='w-full h-full object-cover opacity-40'
+            className='w-full h-full object-cover opacity-100 border-8 border-red-500'
             loop
             muted
             playsInline
+            autoPlay
           >
             <source src="/subway-surfers.mp4" type="video/mp4" />
             </video>
@@ -178,12 +182,15 @@ Just give me the ultra-casual version, nothing else:`
         )}
 
       {!output && (                                     
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute w-96 h-96 bg-pink-500..."></div>
-        <div className="absolute w-96 h-96 bg-blue-500..."></div>
-        <div className="absolute w-96 h-96 bg-purple-500..."></div>
-      </div>
-    )} 
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" 
+               style={{top: '10%', left: '20%', animationDuration: '4s'}}></div>
+          <div className="absolute w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" 
+               style={{top: '50%', right: '20%', animationDuration: '6s', animationDelay: '1s'}}></div>
+          <div className="absolute w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" 
+               style={{bottom: '10%', left: '40%', animationDuration: '5s', animationDelay: '2s'}}></div>
+        </div>
+      )}
 
       {/* main content */}
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
@@ -254,7 +261,7 @@ Just give me the ultra-casual version, nothing else:`
 
           {/* Output Section */}
           {output && (
-            <div className="bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/30 shadow-xl">
+            <div className="bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/30 shadow-xl max-h-96 overflow-y-auto">
               <div className="flex items-start justify-between mb-3">
                 <h3 className="text-pink-300 font-semibold text-sm uppercase tracking-wide">
                   ✨ Simplified
@@ -276,11 +283,15 @@ Just give me the ultra-casual version, nothing else:`
                   )}
             </div>
           </div>
+          {/* Scrollable text container */}
+            <div className="max-h-[60vh] overflow-y-auto pr-2">
               <p className="text-white text-lg leading-relaxed whitespace-pre-wrap">
                 {output}
               </p>
             </div>
+        </div>
           )}
+
         </div>
 
         {/* Footer */}

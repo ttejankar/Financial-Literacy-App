@@ -1,85 +1,194 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 
 function App() {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const videoRef = useRef(null);
 
   const simplifyText = async () => {
-    if(!input.trim())
-      return;
+    if (!input.trim()) return;
 
     setLoading(true);
     setOutput('');
 
-    try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': process.env.REACT_APP_CLAUDE_API_KEY,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: "claude-3-haiku-20241021",
-          max_tokens: 1024,
-          messages: [
-{
-              role: "user",
-              content: `You're a financial literacy educator for Gen Z. Take this concept and explain it in simple, relatable terms. Use casual language, modern examples (apps, streaming services, social media), and break down any jargon. Keep it concise (2-3 sentences) and engaging.
-              Financial concept: ${input}
+    const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY || "AIzaSyCE-uNHYVc5QeF40a3FdSgBiVuHN9pUNyc";
 
-              Simplified output:`
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `You are a Gen Z financial educator who explains complex finance topics in the most casual, relatable way possible. You write like you're texting in a group chat - super casual, using slang, emojis, and keeping it real about money.
+
+Rewrite this financial info like you're explaining it to your group chat. Maximum casual energy:
+
+- write like you're literally typing fast in a group text
+- use slang naturally ("fr," "ngl," "lowkey," "deadass")  
+- be slightly hyperbolic for effect
+- use lowercase and unconventional punctuation
+- explain it like you're just learning about this and hype to share 
+- limit swearing but use full word if doing so
+- throw in a couple emojis where they fit
+- keep it real about money stress
+- skip the intro and jump straight into details
+- be funny and make current pop culture references where it makes sense
+- reference 6/7 joke ("6 or 7 hundred dollars," etc) but only once in a response
+- Kill ALL jargon - if a word sounds "finance-y," replace it
+- Use analogies to everyday Gen Z life
+- Emphasize the "why should I care"
+
+Original text:
+"""
+${input}
+"""
+
+Just give me the ultra-casual version, nothing else:`
+                  }
+                ]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.9,
+              maxOutputTokens: 2048,
+              topP: 0.95,
             }
-          ]
-        })
-      });
+          })
+        }
+      );
 
       const data = await response.json();
-      const simpleText = data.content
-        .map(item => (item.type === "text" ? item.text : ""))
-        .filter(Boolean)
-        .join("\n");
 
-      setOutput(simpleText);
+      // Error handling
+      if (!response.ok) {
+        console.error("Gemini API Error:", data);
+        if (data.error?.message) {
+          setOutput(`API Error: ${data.error.message}`);
+          setLoading(false);
+          return;
+        }
+        setOutput("API request failed");
+        setLoading(false);
+        return;
+      }
+
+      // Check if we got content
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+        console.error("Unexpected response format:", data);
+        setOutput("No content received from API");
+        setLoading(false);
+        return;
+      }
+
+      // Extract text from Gemini's response structure
+      const ultraCasualText = data.candidates[0].content.parts[0].text;
+      setOutput(ultraCasualText);
+
     } catch (error) {
-      console.error('Error simplifying text:', error);
-      setOutput('Sorry, there was an error processing your request.');
+      console.error("Error:", error);
+      setOutput("bruh the api said no 💀");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-
   };
 
   const speakText = () => {
-    if (!output) 
+    if (!output) return;
+
+    if( videoRef.current && !isSpeaking && !isPaused){
+      videoRef.current.play();
+    }
+
+    if (isPaused){
+      window.speechSynthesis.resume();
+      setIsPaused(false);
+      setIsSpeaking(true);
       return;
+    }
+
+    if (isSpeaking){
+      window.speechSynthesis.pause();
+      setIsSpeaking(false);
+      setIsPaused(true);
+      return;
+    }
 
     const utterance = new SpeechSynthesisUtterance(output);
     utterance.lang = 'en-US';
     utterance.rate = 1;
     utterance.pitch = 1;
+
+    utterance.onstart = () => {          
+      setIsSpeaking(true);
+      setIsPaused(false);
+    };
+    utterance.onend = () => {             
+      setIsSpeaking(false);
+      setIsPaused(false);
+    };
+    utterance.onerror = () => {          
+      setIsSpeaking(false);
+      setIsPaused(false);
+    };
+
     window.speechSynthesis.speak(utterance);
+  };
+
+  const stopAudio = () => {               
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+    setIsPaused(false);
+
+    if(videoRef.current){
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
   };
 
   const financialTerms = ["APR", "Compound Interest", "Diversification", "Liquidity", "Asset Allocation"];
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
-      {/* subway surfers video implementation */}
+      
+      {/* video background */}
+      {output && (
+        <div className="fixed inset-0 z-0">
+          <video
+            ref={videoRef}
+            className='w-full h-full object-cover opacity-40'
+            loop
+            muted
+            playsInline
+          >
+            <source src="/subway-surfers.mp4" type="video/mp4" />
+            </video>
+            {/* overlay to darken video and make text readable */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/90"></div>
+              </div>
+        )}
+
+      {!output && (                                     
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" 
-             style={{top: '10%', left: '20%', animationDuration: '4s'}}></div>
-        <div className="absolute w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" 
-             style={{top: '50%', right: '20%', animationDuration: '6s', animationDelay: '1s'}}></div>
-        <div className="absolute w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" 
-             style={{bottom: '10%', left: '40%', animationDuration: '5s', animationDelay: '2s'}}></div>
+        <div className="absolute w-96 h-96 bg-pink-500..."></div>
+        <div className="absolute w-96 h-96 bg-blue-500..."></div>
+        <div className="absolute w-96 h-96 bg-purple-500..."></div>
       </div>
+    )} 
 
       {/* main content */}
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
 
-      {/* Header */}
+        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-6xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent mb-4">
             FinLit Simplifier
@@ -94,7 +203,7 @@ function App() {
           {/* Input Section */}
           <div className="mb-6">
             <label className="block text-purple-200 text-sm font-semibold mb-2">
-              Drop that confusing finance term 👇
+              Drop that confusing finance stuff 👇
             </label>
             <textarea
               value={input}
@@ -111,7 +220,7 @@ function App() {
             />
           </div>
         
-        {/* Example Pills */}
+          {/* Example Pills */}
           <div className="mb-6">
             <p className="text-purple-200 text-xs mb-2">Or try these:</p>
             <div className="flex flex-wrap gap-2">
@@ -150,14 +259,24 @@ function App() {
                 <h3 className="text-pink-300 font-semibold text-sm uppercase tracking-wide">
                   ✨ Simplified
                 </h3>
-                <button
-                  onClick={speakText}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all duration-200 text-sm font-semibold shadow-md hover:scale-105"
-                >
-                  🔊 Read Aloud
-                </button>
-              </div>
-              <p className="text-white text-lg leading-relaxed">
+                <div className="flex gap-2">
+                  <button
+                    onClick={speakText}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all duration-200 text-sm font-semibold shadow-md hover:scale-105"
+                  >
+                    {isSpeaking ? '⏸️ Pause' : isPaused ? '▶️ Resume' : '🔊 Read Aloud'}
+                  </button>
+                  {(isSpeaking || isPaused) && (
+                    <button
+                      onClick={stopAudio}
+                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-all duration-200 text-sm font-semibold shadow-md hover:scale-105"
+                    >
+                      ⏹️ Stop
+                    </button>
+                  )}
+            </div>
+          </div>
+              <p className="text-white text-lg leading-relaxed whitespace-pre-wrap">
                 {output}
               </p>
             </div>
@@ -174,4 +293,5 @@ function App() {
     </div>
   );
 }
+
 export default App;

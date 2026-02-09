@@ -14,7 +14,7 @@ function App() {
     setLoading(true);
     setOutput('');
 
-    const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY || "AIzaSyCE-uNHYVc5QeF40a3FdSgBiVuHN9pUNyc";
+    const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
 
     try {
       const response = await fetch(
@@ -168,7 +168,7 @@ Just give me the ultra-casual version, nothing else:`
         <div className={`fixed inset-0 z-0 transition-opacity duration-500 ${output ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
           <video
             ref={videoRef}
-            className='w-full h-full object-cover opacity-100 border-8 border-red-500'
+            className='w-full h-full object-cover opacity-100'
             loop
             muted
             playsInline
@@ -201,7 +201,7 @@ Just give me the ultra-casual version, nothing else:`
             FinLit Simplifier
           </h1>
           <p className="text-2xl text-purple-200">
-            Financial jargon? We don't know her 💅
+            Your finances in your terms 💅
           </p>
         </div>
 
